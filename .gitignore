@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.agentvault/
+*.lock
+.DS_Store

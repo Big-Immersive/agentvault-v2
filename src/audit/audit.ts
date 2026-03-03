@@ -20,13 +20,24 @@ function getDb(projectDir: string): Database.Database {
   return db;
 }
 
+function sanitize(val: string, maxLen = 256): string {
+  return (val || '').slice(0, maxLen).replace(/\0/g, '');
+}
+
 /** Log a credential access event */
 export function logAccess(projectDir: string, entry: Omit<AuditEntry, 'id'>): void {
   const db = getDb(projectDir);
   try {
     db.prepare(
       'INSERT INTO audit (sessionId, agentId, profileName, varName, action, timestamp) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(entry.sessionId, entry.agentId, entry.profileName, entry.varName, entry.action, entry.timestamp);
+    ).run(
+      sanitize(entry.sessionId),
+      sanitize(entry.agentId),
+      sanitize(entry.profileName),
+      sanitize(entry.varName),
+      sanitize(entry.action, 10),
+      sanitize(entry.timestamp, 64)
+    );
   } finally {
     db.close();
   }

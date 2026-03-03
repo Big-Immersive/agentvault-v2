@@ -12,8 +12,8 @@ function loadSessions(projectDir: string): Session[] {
 
 function saveSessions(projectDir: string, sessions: Session[]): void {
   const fp = resolvePaths(projectDir).sessions;
-  fs.mkdirSync(path.dirname(fp), { recursive: true });
-  fs.writeFileSync(fp, JSON.stringify(sessions, null, 2));
+  fs.mkdirSync(path.dirname(fp), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(fp, JSON.stringify(sessions, null, 2), { mode: 0o600 });
 }
 
 /** Create a new agent session */

@@ -7,7 +7,7 @@ export function memoryCommand(): Command {
 
   cmd.command('store <key> <content>')
     .description('Store a memory entry')
-    .option('-t, --type <type>', 'Memory type: fact|preference|context|cache|instruction', 'fact')
+    .option('-t, --type <type>', 'Memory type: knowledge|query_cache|operational', 'knowledge')
     .option('--tags <tags...>', 'Tags for categorization')
     .option('-c, --confidence <n>', 'Confidence score 0-1', '0.8')
     .option('-s, --source <source>', 'Source identifier')

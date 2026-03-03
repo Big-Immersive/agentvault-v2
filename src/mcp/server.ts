@@ -89,7 +89,7 @@ const TOOLS = [
       properties: {
         key: { type: 'string', description: 'Memory key' },
         content: { type: 'string', description: 'Memory content' },
-        memoryType: { type: 'string', enum: ['fact', 'preference', 'context', 'cache', 'instruction'] },
+        memoryType: { type: 'string', enum: ['knowledge', 'query_cache', 'operational'] },
         tags: { type: 'array', items: { type: 'string' }, description: 'Tags' },
         confidence: { type: 'number', description: 'Confidence 0-1' },
         source: { type: 'string', description: 'Source identifier' },
@@ -376,51 +376,12 @@ export async function startMcpServer(options: McpServerOptions): Promise<void> {
   process.on('SIGTERM', cleanup);
   process.on('SIGINT', cleanup);
 
-  if (options.transport === 'stdio') {
-    const transport = new StdioServerTransport();
-    await server.connect(transport);
-    console.error('AgentVault MCP server running on stdio');
-  } else {
-    // SSE transport
-    const { SSEServerTransport } = await import('@modelcontextprotocol/sdk/server/sse.js');
-    const http = await import('node:http');
-
-    const expectedToken = process.env[MCP_TOKEN_ENV];
-
-    const httpServer = http.createServer(async (req, res) => {
-      // Auth check for SSE
-      if (expectedToken) {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || authHeader !== `Bearer ${expectedToken}`) {
-          res.writeHead(401, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(fail('Unauthorized', 'UNAUTHORIZED')));
-          return;
-        }
-      }
-
-      if (req.url === '/sse') {
-        const transport = new SSEServerTransport('/messages', res);
-        await server.connect(transport);
-      } else if (req.url === '/messages' && req.method === 'POST') {
-        // Handle messages - the SSE transport should handle this
-        // but we need to pass it through
-        let body = '';
-        req.on('data', (chunk: Buffer) => { body += chunk.toString(); });
-        req.on('end', () => {
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ received: true }));
-        });
-      } else {
-        res.writeHead(404);
-        res.end('Not found');
-      }
-    });
-
-    httpServer.listen(options.port, () => {
-      console.error(`AgentVault MCP server running on SSE port ${options.port}`);
-    });
-
-    process.on('SIGTERM', () => httpServer.close());
-    process.on('SIGINT', () => httpServer.close());
+  if (options.transport !== 'stdio') {
+    console.error('SSE transport is not available in v1.0. Use --transport stdio (default).');
+    process.exit(1);
   }
+
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error('AgentVault MCP server running on stdio');
 }

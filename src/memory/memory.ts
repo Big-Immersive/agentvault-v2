@@ -5,6 +5,7 @@ import { getPassphrase, readEncryptedFile, writeEncryptedFile } from '../vault/e
 import { MEMORY_MAX_ENTRIES, MEMORY_MAX_BYTES, MEMORY_WARN_PERCENT } from '../config/defaults.js';
 import { extractKeywords, computeQueryHash, searchMemories } from './search.js';
 import { memoryMutex } from './mutex.js';
+import { validateKey, validateMemoryContent, validateTags } from '../config/validate.js';
 import type { MemoryEntry, MemoryType } from '../types/index.js';
 import type { SearchResponse } from './search.js';
 
@@ -56,6 +57,10 @@ export async function storeMemory(
     queryHash?: string;
   }
 ): Promise<MemoryEntry> {
+  validateKey(opts.key, 'Memory key');
+  validateMemoryContent(opts.content);
+  if (opts.tags) validateTags(opts.tags);
+
   return memoryMutex.runExclusive(() => {
     ensureDir(projectDir);
     const { memory: memPath, base } = resolvePaths(projectDir);
@@ -67,7 +72,7 @@ export async function storeMemory(
       const autoKeywords = extractKeywords(opts.content);
       const userKeywords = (opts.keywords ?? []).map(k => k.toLowerCase().trim()).filter(k => k.length > 0);
       const keywords = [...new Set([...autoKeywords, ...userKeywords])];
-      const qHash = opts.queryHash ?? (opts.content ? computeQueryHash(opts.content) : undefined);
+      const qHash = opts.queryHash ?? undefined;
 
       // Check for same key → overwrite
       const idx = entries.findIndex(e => e.key === opts.key);

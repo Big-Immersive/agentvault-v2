@@ -13,8 +13,8 @@ export interface VaultEntry {
   addedAt: string;
 }
 
-/** Memory entry types */
-export type MemoryType = 'fact' | 'preference' | 'context' | 'cache' | 'instruction';
+/** Memory entry types (ACSS §11 compliant) */
+export type MemoryType = 'knowledge' | 'query_cache' | 'operational';
 
 /** Memory store entry */
 export interface MemoryEntry {
@@ -103,11 +103,18 @@ export interface LicenseDescriptor {
 
 /** Bank descriptor for purchased memory bank */
 export interface BankDescriptor {
+  schema: 'agentvault-bank-descriptor/1.0';
   name: string;
   description: string;
   entryCount: number;
+  contentHash: string;
   tags: string[];
+  accessModel: LicenseAccessType;
+  previewEntries?: Array<{ key: string; content: string }>;
   createdAt: string;
+  // v2.0+ fields (forward-compat)
+  sellerWallet?: string;
+  price?: string;
 }
 
 /** Portable vault format (.avault) */

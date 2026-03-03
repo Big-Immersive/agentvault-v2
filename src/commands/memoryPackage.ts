@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { resolvePaths } from '../config/paths.js';
@@ -16,6 +17,7 @@ export function memoryPackageCommand(): Command {
     .option('--access-type <type>', 'License type: unlimited|time_locked|access_limited|time_and_access|subscription', 'unlimited')
     .option('--max-accesses <n>', 'Max accesses for access_limited types')
     .option('--expires-days <n>', 'Days until expiry for time_locked types')
+    .option('--dry-run', 'Preview without creating the package')
     .action((opts) => {
       const dir = process.cwd();
       const entries = loadMemories(dir);
@@ -26,19 +28,42 @@ export function memoryPackageCommand(): Command {
         return;
       }
 
-      const bankDir = path.join(resolvePaths(dir).purchasedBanks, opts.name);
+      if (opts.dryRun) {
+        console.log(`[DRY RUN] Would package ${filtered.length} entries from tag "${opts.fromTag}"`);
+        console.log(`  Bank name: ${opts.name}`);
+        console.log(`  Access type: ${opts.accessType}`);
+        console.log(`  Sample keys: ${filtered.slice(0, 5).map(e => e.key).join(', ')}`);
+        return;
+      }
+
+      const bankDir = path.join(resolvePaths(dir).base, 'packaged-banks', opts.name);
       fs.mkdirSync(bankDir, { recursive: true });
 
       // Write encrypted bank data
       const passphrase = getPassphrase(dir);
       writeEncryptedFile(path.join(bankDir, 'bank.encrypted'), filtered, passphrase);
 
+      // Compute content hash: sort entries by key, join with \x00, SHA-256
+      const sortedKeys = filtered.map(e => e.key).sort();
+      const hashInput = sortedKeys.join('\x00');
+      const contentHash = crypto.createHash('sha256').update(hashInput, 'utf-8').digest('hex');
+
+      // Select preview entries (first 3)
+      const previewEntries = filtered.slice(0, 3).map(e => ({
+        key: e.key,
+        content: e.content.slice(0, 200),
+      }));
+
       // Write descriptor
       const descriptor: BankDescriptor = {
+        schema: 'agentvault-bank-descriptor/1.0',
         name: opts.name,
         description: opts.description,
         entryCount: filtered.length,
+        contentHash,
         tags: [opts.fromTag],
+        accessModel: opts.accessType,
+        previewEntries,
         createdAt: new Date().toISOString(),
       };
       fs.writeFileSync(path.join(bankDir, 'descriptor.json'), JSON.stringify(descriptor, null, 2));

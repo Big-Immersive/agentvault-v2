@@ -19,6 +19,11 @@ export function vaultCommand(): Command {
           console.error('Plaintext export requires --confirm-plaintext flag');
           process.exit(1);
         }
+        if (!opts.passphrase) {
+          console.error('Plaintext export requires --passphrase to verify vault access');
+          process.exit(1);
+        }
+        // Passphrase is verified implicitly by loadVault (decryption fails if wrong)
         const entries = loadVault(process.cwd());
         const memories = opts.includeMemories ? loadMemories(process.cwd()) : [];
         const data = JSON.stringify({ entries, memories }, null, 2);
@@ -36,13 +41,30 @@ export function vaultCommand(): Command {
   cmd.command('import <input>')
     .description('Import from a portable .avault file')
     .requiredOption('--passphrase <passphrase>', 'Passphrase for the imported file')
-    .option('--merge', 'Merge with existing entries (default: skip existing keys)')
+    .option('--merge', 'Overwrite existing keys (default: skip existing)')
+    .option('--dry-run', 'Preview without importing')
     .action(async (input: string, opts) => {
       const portable = importPortable(input, opts.passphrase);
+
+      if (opts.dryRun) {
+        console.log(`[DRY RUN] Would import from ${input}:`);
+        console.log(`  ${portable.entries.length} secret(s): ${portable.entries.map(e => e.key).join(', ')}`);
+        console.log(`  ${portable.memories.length} memory/memories`);
+        return;
+      }
+
       let secretCount = 0;
+      let skippedCount = 0;
       let memoryCount = 0;
+      const { loadVault: loadExisting } = await import('../vault/vault.js');
+      const existingKeys = new Set(loadExisting(process.cwd()).map(e => e.key));
 
       for (const entry of portable.entries) {
+        if (existingKeys.has(entry.key) && !opts.merge) {
+          console.log(`  Skipped: ${entry.key} (already exists, use --merge to overwrite)`);
+          skippedCount++;
+          continue;
+        }
         addSecret(process.cwd(), entry.key, entry.value);
         secretCount++;
       }
@@ -60,6 +82,7 @@ export function vaultCommand(): Command {
       }
 
       console.log(`Imported ${secretCount} secret(s) and ${memoryCount} memory/memories from ${input}`);
+      if (skippedCount) console.log(`Skipped ${skippedCount} existing secret(s)`);
     });
 
   return cmd;

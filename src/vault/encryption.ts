@@ -84,6 +84,6 @@ export function readEncryptedFile<T>(filePath: string, passphrase: string, fallb
 export function writeEncryptedFile(filePath: string, data: unknown, passphrase: string): void {
   const plaintext = JSON.stringify(data);
   const envelope = encrypt(plaintext, passphrase);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(envelope, null, 2));
+  fs.mkdirSync(path.dirname(filePath), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(filePath, JSON.stringify(envelope, null, 2), { mode: 0o600 });
 }

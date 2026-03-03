@@ -3,6 +3,7 @@ import lockfile from 'proper-lockfile';
 import { resolvePaths } from '../config/paths.js';
 import { getPassphrase, readEncryptedFile, writeEncryptedFile } from './encryption.js';
 import { VAULT_MAX_ENTRIES, VAULT_MAX_BYTES, VAULT_WARN_PERCENT } from '../config/defaults.js';
+import { validateKey, validateSecretValue } from '../config/validate.js';
 import type { VaultEntry } from '../types/index.js';
 
 function ensureVaultDir(projectDir: string): void {
@@ -43,6 +44,8 @@ export function saveVault(projectDir: string, entries: VaultEntry[]): void {
 
 /** Add or update a secret with file locking */
 export function addSecret(projectDir: string, key: string, value: string): void {
+  validateKey(key, 'Secret key');
+  validateSecretValue(value);
   ensureVaultDir(projectDir);
   const { vault: vaultPath, base } = resolvePaths(projectDir);
   const release = lockfile.lockSync(base, { lockfilePath: vaultPath + '.lock' });

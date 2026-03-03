@@ -1,0 +1,52 @@
+{
+  "name": "agentvault",
+  "version": "1.0.0",
+  "description": "Encrypted agent credential and memory vault with MCP server",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "agentvault": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist/",
+    "profiles/",
+    "README.md"
+  ],
+  "keywords": [
+    "ai",
+    "security",
+    "credentials",
+    "vault",
+    "mcp",
+    "agent",
+    "encryption"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "better-sqlite3": "^11.7.0",
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
+    "proper-lockfile": "^4.1.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "@types/proper-lockfile": "^4.1.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

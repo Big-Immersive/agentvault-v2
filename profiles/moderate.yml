@@ -1,0 +1,27 @@
+name: moderate
+description: Balanced — allows common dev vars, redacts secrets, denies cloud credentials.
+trustLevel: 50
+ttlSeconds: 3600
+rules:
+  - pattern: "*"
+    access: deny
+  - pattern: NODE_ENV
+    access: allow
+  - pattern: NPM_*
+    access: allow
+  - pattern: DEBUG
+    access: allow
+  - pattern: LOG_LEVEL
+    access: allow
+  - pattern: PORT
+    access: allow
+  - pattern: HOST
+    access: allow
+  - pattern: DATABASE_URL
+    access: redact
+  - pattern: AWS_*
+    access: redact
+  - pattern: OPENAI_*
+    access: redact
+  - pattern: ANTHROPIC_*
+    access: redact

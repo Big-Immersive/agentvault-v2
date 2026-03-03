@@ -17,11 +17,17 @@ export function memoryPackageCommand(): Command {
     .option('--access-type <type>', 'License type: unlimited|time_locked|access_limited|time_and_access|subscription', 'unlimited')
     .option('--max-accesses <n>', 'Max accesses for access_limited types')
     .option('--expires-days <n>', 'Days until expiry for time_locked types')
+    .option('--since <days>', 'Only include memories from the last N days')
     .option('--dry-run', 'Preview without creating the package')
     .action((opts) => {
       const dir = process.cwd();
       const entries = loadMemories(dir);
-      const filtered = entries.filter(e => e.tags.includes(opts.fromTag));
+      let filtered = entries.filter(e => e.tags.includes(opts.fromTag));
+
+      if (opts.since) {
+        const cutoff = Date.now() - parseInt(opts.since) * 86400000;
+        filtered = filtered.filter(e => new Date(e.addedAt).getTime() >= cutoff);
+      }
 
       if (!filtered.length) {
         console.log(`No memories found with tag "${opts.fromTag}"`);

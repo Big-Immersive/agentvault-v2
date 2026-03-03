@@ -11,6 +11,8 @@ import {
 import { resolvePaths } from '../config/paths.js';
 import { getSecret, listSecretKeys } from '../vault/vault.js';
 import { storeMemory, queryMemories, listMemories, removeMemory, exportMemories } from '../memory/memory.js';
+import { checkLicense, consumeAccess, loadBankEntries, listPurchasedBanks, loadLicense } from '../license/license.js';
+import { searchMemories } from '../memory/search.js';
 import { queryAudit } from '../audit/audit.js';
 import { listProfiles, loadProfile } from '../profiles/profiles.js';
 import { loadVault } from '../vault/vault.js';
@@ -236,15 +238,54 @@ async function handleTool(
       case 'vault.memory.query': {
         const query = args.query as string;
         if (!query) return fail('Missing query parameter', 'INVALID_INPUT');
-        const response = await queryMemories(projectDir, query, (args.limit as number) || 10);
-        return ok({
-          results: response.results.map(r => ({
+        const maxResults = (args.limit as number) || 10;
+        const response = await queryMemories(projectDir, query, maxResults);
+
+        // Also search purchased banks with valid licenses
+        const bankResults: Array<{ key: string; score: number; memoryType: string; content: string; tags: string[]; source: string }> = [];
+        try {
+          const banks = listPurchasedBanks(projectDir);
+          for (const bankName of banks) {
+            const license = loadLicense(projectDir, bankName);
+            const check = checkLicense(license);
+            if (!check.valid) continue;
+
+            const bankEntries = loadBankEntries(projectDir, bankName);
+            const bankSearch = searchMemories(bankEntries, query, 5);
+            for (const r of bankSearch.results) {
+              bankResults.push({
+                key: r.entry.key,
+                score: r.score,
+                memoryType: r.entry.memoryType,
+                content: r.entry.content,
+                tags: r.entry.tags,
+                source: `bank:${bankName}`,
+              });
+            }
+            // Consume access for metered licenses
+            if (bankSearch.results.length > 0) {
+              consumeAccess(projectDir, bankName);
+            }
+          }
+        } catch {
+          // Best-effort bank search — don't fail the whole query
+        }
+
+        // Merge local + bank results, sort by score
+        const allResults = [
+          ...response.results.map(r => ({
             key: r.entry.key,
             score: r.score,
             memoryType: r.entry.memoryType,
             content: r.entry.content,
             tags: r.entry.tags,
+            source: 'local',
           })),
+          ...bankResults,
+        ].sort((a, b) => b.score - a.score).slice(0, maxResults);
+
+        return ok({
+          results: allResults,
           totalSearched: response.totalSearched,
         });
       }

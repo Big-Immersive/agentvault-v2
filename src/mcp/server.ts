@@ -32,6 +32,8 @@ interface McpServerOptions {
   transport: 'stdio' | 'sse';
   port: number;
   projectDir: string;
+  budget?: number;
+  rateLimit?: number;
 }
 
 /** Rate limiter state */
@@ -42,14 +44,16 @@ let budget: McpBudget = {
   totalCalls: 0,
 };
 
+let configuredRateLimit = MCP_RATE_LIMIT;
+
 function checkRateLimit(): McpResponse | null {
   const now = Date.now();
   if (now - budget.minuteStart > 60000) {
     budget.callsThisMinute = 0;
     budget.minuteStart = now;
   }
-  if (budget.callsThisMinute >= MCP_RATE_LIMIT) {
-    return fail(`Rate limit exceeded: ${MCP_RATE_LIMIT} calls/minute`, 'RATE_LIMITED');
+  if (budget.callsThisMinute >= configuredRateLimit) {
+    return fail(`Rate limit exceeded: ${configuredRateLimit} calls/minute`, 'RATE_LIMITED');
   }
   budget.callsThisMinute++;
   budget.totalCalls++;
@@ -306,6 +310,7 @@ async function handleTool(
 
 export async function startMcpServer(options: McpServerOptions): Promise<void> {
   const { projectDir } = options;
+  configuredRateLimit = options.rateLimit ?? MCP_RATE_LIMIT;
 
   const server = new Server(
     { name: 'agentvault', version: '1.0.0' },
@@ -357,10 +362,23 @@ export async function startMcpServer(options: McpServerOptions): Promise<void> {
           mimeType: 'text/plain',
           text: [
             'You have access to AgentVault — an encrypted credential and memory vault.',
-            'Use vault.memory.store to save important facts, preferences, and context.',
-            'Use vault.memory.query to retrieve relevant memories before answering questions.',
-            'Use vault.secret.get to access credentials when needed for API calls.',
-            'All access is audited. Be specific with memory keys and tags for better retrieval.',
+            '',
+            'BEFORE generating an answer, ALWAYS check memory first:',
+            '  vault.memory.query "<topic>" — search for existing knowledge',
+            '',
+            'If memory has a relevant result (score > 0.5), USE it instead of generating from scratch.',
+            'If memory returns no results, generate normally, then STORE the valuable parts:',
+            '  vault.memory.store — save with a descriptive key, type "knowledge", and relevant tags',
+            '',
+            'Key guidelines:',
+            '- Keys should be descriptive: "stripe-webhook-verification", not "item-1"',
+            '- Tags should be domain terms: --tags stripe webhook security',
+            '- Set confidence based on how sure you are (0.0-1.0)',
+            '- Set source to identify where the knowledge came from',
+            '- Use type "knowledge" for facts, "query_cache" for expensive lookups, "operational" for config/state',
+            '- Use vault.secret.get to access API credentials when needed',
+            '',
+            'All access is encrypted and audited.',
           ].join('\n'),
         }],
       };

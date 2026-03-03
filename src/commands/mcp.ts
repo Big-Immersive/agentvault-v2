@@ -5,15 +5,18 @@ export function mcpCommand(): Command {
 
   cmd.command('start')
     .description('Start the MCP server')
-    .option('--transport <type>', 'Transport type: stdio or sse', 'stdio')
-    .option('--port <port>', 'SSE port (only for sse transport)', '3100')
+    .option('--transport <type>', 'Transport type: stdio', 'stdio')
+    .option('--budget <amount>', 'Max marketplace spend per session (USD)', '0')
+    .option('--rate-limit <n>', 'Max tool calls per minute', '60')
     .action(async (opts) => {
       // Dynamic import to avoid loading MCP SDK at CLI startup
       const { startMcpServer } = await import('../mcp/server.js');
       await startMcpServer({
         transport: opts.transport as 'stdio' | 'sse',
-        port: parseInt(opts.port),
+        port: 3100,
         projectDir: process.cwd(),
+        budget: parseFloat(opts.budget),
+        rateLimit: parseInt(opts.rateLimit),
       });
     });
 

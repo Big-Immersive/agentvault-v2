@@ -1,91 +1,114 @@
 # AgentVault
 
-Encrypted agent credential and memory vault with MCP server.
+**Encrypted credential and memory vault for AI agents.**
 
-## Features
+Your agent's API keys are in a `.env` file. Its learned knowledge lives in plaintext JSON. Any process on your machine can read both. AgentVault fixes that.
 
-- **Encrypted Vault** — AES-256-GCM with scrypt key derivation, random salt per file
-- **Memory Store** — Keyword-indexed memory with search ranking, freshness scoring, and TTL
-- **MCP Server** — Model Context Protocol server (stdio + SSE) with 11 tools
-- **Profile System** — Granular permission profiles for agent sandboxing
-- **Audit Trail** — SQLite-backed audit log of all credential access
-- **Portable Export** — Self-contained `.avault` files for vault portability
-- **License Enforcement** — Access control for purchased memory banks
+## What it does
 
-## Quick Start
+- **Encrypted secrets** — AES-256-GCM, random salt per file, scrypt key derivation. Your API keys are encrypted at rest.
+- **Encrypted memory** — Your agent stores knowledge as it works. All encrypted. Keyword search runs in-memory after decryption.
+- **Permission profiles** — Control which secrets each agent sees. Your coding agent gets GitHub tokens. Your analytics agent gets read-only DB access. Your marketing agent never sees your Stripe keys.
+- **Sandboxed execution** — `agentvault wrap -p restrictive "claude-code ."` runs any agent with only the credentials its profile allows.
+- **Audit trail** — Every credential access is logged. SQLite, append-only. Who accessed what, when, with which profile.
+- **MCP server** — Connect from Claude Code, Cursor, or any MCP-compatible tool. 11 tools for real-time vault access.
+- **Portable vaults** — Export encrypted subsets as `.avault` files. Hand them to another machine. Import with a passphrase.
+
+## Install
 
 ```bash
-npm install
-agentvault init
-agentvault secret add API_KEY "sk-..."
-agentvault memory store my-fact "Important context about the project" -t fact --tags project
-agentvault memory query "project context"
+npm install -g agentvault
 ```
 
-## CLI Commands
+## Quick start
+
+```bash
+# Initialize vault in your project
+agentvault init
+
+# Add secrets
+agentvault secret add STRIPE_KEY "sk_live_..."
+agentvault secret add OPENAI_KEY "sk-..."
+
+# Store agent knowledge
+agentvault memory store stripe-webhooks \
+  "Always verify webhook signatures with the raw body, not parsed JSON" \
+  -t knowledge --tags stripe webhook
+
+# Search knowledge
+agentvault memory query "stripe webhook verification"
+# → [0.800] stripe-webhooks (knowledge) -- Always verify webhook...
+# 1 result(s) from 3 entries
+
+# Run an agent with controlled access
+agentvault wrap -p moderate "claude-code ."
+
+# Start MCP server for live agent connections
+agentvault mcp start
+
+# Health check
+agentvault doctor
+```
+
+## Commands
 
 | Command | Description |
 |---------|-------------|
-| `init` | Initialize AgentVault in current project |
-| `secret add/get/list/remove/import` | Manage vault secrets |
-| `profile list/show/create/delete/clone` | Manage permission profiles |
-| `audit show/export/clear` | View credential access audit logs |
-| `revoke` | Revoke agent sessions (kill switch) |
-| `status` | Show AgentVault status |
-| `preview -p <profile>` | Preview env var access for a profile |
-| `doctor` | Health check for vault integrity |
+| `init` | Initialize `.agentvault/` with encrypted storage and profiles |
+| `secret add/get/list/remove/import` | Manage encrypted credentials |
+| `profile list/show/create/delete` | Manage permission profiles |
+| `wrap -p <profile> "<command>"` | Run agent in sandboxed environment |
+| `memory store/query/list/remove/export` | Manage encrypted agent memory |
+| `memory package` | Package memories into a sellable bank |
+| `vault export/import` | Portable vault operations (`.avault`) |
+| `mcp start` | Start MCP server (stdio transport) |
+| `audit show/export/clear` | View credential access logs |
+| `status` | Vault status overview |
+| `doctor` | Health check and integrity verification |
+| `preview -p <profile>` | Dry-run: what an agent would see |
 | `diff <profileA> <profileB>` | Compare two profiles |
-| `wrap -p <profile> <command>` | Run command in sandboxed environment |
-| `memory store/query/list/remove/export` | Manage agent memory |
-| `memory package` | Package memories into purchasable bank |
-| `vault export/import` | Portable vault export/import |
-| `mcp start` | Start MCP server |
+| `revoke` | Kill active agent sessions |
 
-## MCP Server
+## Memory search
 
-Start the MCP server for agent integration:
+Keyword-based search with composite scoring:
 
-```bash
-# stdio transport (for Claude, Cursor, etc.)
-agentvault mcp start
-
-# SSE transport
-agentvault mcp start --transport sse --port 3100
+```
+score = matchRatio × confidence × freshnessDecay × recencyBoost
 ```
 
-### MCP Tools
+- **matchRatio**: fraction of query tokens matched in entry keywords
+- **confidence**: stored confidence score (0.0–1.0)
+- **freshnessDecay**: linear decay over TTL
+- **recencyBoost**: frequently accessed entries get a small bump (max 10%)
 
-- `vault.secret.get` / `vault.secret.list` — Credential access
-- `vault.memory.store` / `vault.memory.query` / `vault.memory.list` / `vault.memory.remove` — Memory management
-- `vault.audit.show` — Audit trail
-- `vault.status` / `vault.profile.show` / `vault.preview` — Status and configuration
-- `vault.export` — Portable export
+Auto-extracts keywords from content on store. Merges with user-provided keywords.
+
+Zero results return `{ results: [], totalSearched: N }` so agents know the vault isn't empty.
+
+## Permission profiles
+
+Three built-in profiles:
+
+- **restrictive** — Denies everything except system vars. For untrusted agents.
+- **moderate** — Allows common dev vars, redacts secrets, denies cloud credentials.
+- **permissive** — Allows everything with full audit trail. For trusted agents.
 
 ## Security
 
-- AES-256-GCM encryption with random salt per file
+- AES-256-GCM encryption with random 32-byte salt per file
 - scrypt key derivation (N:16384, r:8, p:1)
-- No default passphrase — must be explicitly configured
-- File locking via proper-lockfile for cross-process safety
-- In-process AsyncMutex for concurrent access serialization
-- Rate limiting (60 calls/min) on MCP server
-- SSE auth via `AGENTVAULT_MCP_TOKEN` bearer token
+- File permissions: 0o600 (owner read/write only)
+- Directory permissions: 0o700
+- No telemetry, no phone-home, no network calls
+- Input validation on all keys, values, content, and tags
+- `--dry-run` on all destructive operations
 
-## Configuration
+## MCP tools
 
-Set passphrase via (in priority order):
-1. `AGENTVAULT_PASSPHRASE` environment variable
-2. `.agentvault/.passphrase` file
-3. Interactive prompt during `init`
+11 tools available when running `agentvault mcp start`:
 
-## Development
-
-```bash
-npm install
-npm run build       # Compile TypeScript
-npm test            # Run all tests
-npm run test:watch  # Watch mode
-```
+`vault.secret.get`, `vault.secret.list`, `vault.memory.store`, `vault.memory.query`, `vault.memory.list`, `vault.memory.remove`, `vault.audit.show`, `vault.status`, `vault.profile.show`, `vault.preview`, `vault.export`
 
 ## License
 

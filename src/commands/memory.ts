@@ -1,5 +1,7 @@
 import { Command } from 'commander';
 import { storeMemory, queryMemories, listMemories, removeMemory, exportMemories } from '../memory/memory.js';
+import { searchMemories } from '../memory/search.js';
+import { checkLicense, consumeAccess, loadBankEntries, listPurchasedBanks, loadLicense } from '../license/license.js';
 import type { MemoryType } from '../types/index.js';
 
 export function memoryCommand(): Command {
@@ -26,15 +28,64 @@ export function memoryCommand(): Command {
     });
 
   cmd.command('query <query>')
-    .description('Search memories by keyword')
+    .description('Search memories by keyword (includes purchased banks)')
     .option('-n, --limit <n>', 'Max results', '10')
+    .option('--local-only', 'Search only local memories, skip purchased banks')
     .action(async (query: string, opts) => {
-      const response = await queryMemories(process.cwd(), query, parseInt(opts.limit));
-      if (!response.results.length) { console.log(`No matching memories found. (${response.totalSearched} entries searched)`); return; }
-      for (const r of response.results) {
-        console.log(`  [${r.score.toFixed(3)}] ${r.entry.key} (${r.entry.memoryType}) -- ${r.entry.content.slice(0, 80)}`);
+      const dir = process.cwd();
+      const maxResults = parseInt(opts.limit);
+      const response = await queryMemories(dir, query, maxResults);
+
+      // Also search purchased banks (unless --local-only)
+      const bankResults: Array<{ key: string; score: number; memoryType: string; content: string; source: string }> = [];
+      if (!opts.localOnly) {
+        try {
+          const banks = listPurchasedBanks(dir);
+          for (const bankName of banks) {
+            const license = loadLicense(dir, bankName);
+            const check = checkLicense(license);
+            if (!check.valid) continue;
+
+            const bankEntries = loadBankEntries(dir, bankName);
+            const bankSearch = searchMemories(bankEntries, query, 5);
+            for (const r of bankSearch.results) {
+              bankResults.push({
+                key: r.entry.key,
+                score: r.score,
+                memoryType: r.entry.memoryType,
+                content: r.entry.content,
+                source: `bank:${bankName}`,
+              });
+            }
+            if (bankSearch.results.length > 0) {
+              consumeAccess(dir, bankName);
+            }
+          }
+        } catch { /* best-effort bank search */ }
       }
-      console.log(`\n${response.results.length} result(s) from ${response.totalSearched} entries`);
+
+      // Merge local + bank results
+      const allResults = [
+        ...response.results.map(r => ({
+          key: r.entry.key,
+          score: r.score,
+          memoryType: r.entry.memoryType,
+          content: r.entry.content,
+          source: 'local',
+        })),
+        ...bankResults,
+      ].sort((a, b) => b.score - a.score).slice(0, maxResults);
+
+      if (!allResults.length) {
+        console.log(`No matching memories found. (${response.totalSearched} entries searched)`);
+        return;
+      }
+      for (const r of allResults) {
+        const src = r.source !== 'local' ? ` [${r.source}]` : '';
+        console.log(`  [${r.score.toFixed(3)}] ${r.key} (${r.memoryType})${src} -- ${r.content.slice(0, 80)}`);
+      }
+      const bankCount = bankResults.length ? ` + ${bankResults.length} from banks` : '';
+      console.log(`\n${allResults.length} result(s) from ${response.totalSearched} local entries${bankCount}`);
     });
 
   cmd.command('list')

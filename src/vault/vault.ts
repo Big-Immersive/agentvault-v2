@@ -1,5 +1,24 @@
 import fs from 'node:fs';
 import lockfile from 'proper-lockfile';
+
+/** Lock with retry — proper-lockfile's lockSync doesn't support retries */
+function lockDir(base: string, lockPath: string): () => void {
+  const maxRetries = 5;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return lockfile.lockSync(base, { lockfilePath: lockPath });
+    } catch (err: unknown) {
+      if (attempt === maxRetries) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('already being held')) throw err;
+      // Busy-wait with jitter (sync context, no setTimeout available)
+      const waitMs = 50 + Math.random() * 100 * (attempt + 1);
+      const end = Date.now() + waitMs;
+      while (Date.now() < end) { /* spin */ }
+    }
+  }
+  throw new Error('Failed to acquire lock');
+}
 import { resolvePaths } from '../config/paths.js';
 import { getPassphrase, readEncryptedFile, writeEncryptedFile } from './encryption.js';
 import { VAULT_MAX_ENTRIES, VAULT_MAX_BYTES, VAULT_WARN_PERCENT } from '../config/defaults.js';
@@ -48,7 +67,7 @@ export function addSecret(projectDir: string, key: string, value: string): void 
   validateSecretValue(value);
   ensureVaultDir(projectDir);
   const { vault: vaultPath, base } = resolvePaths(projectDir);
-  const release = lockfile.lockSync(base, { lockfilePath: vaultPath + '.lock' });
+  const release = lockDir(base, vaultPath + ".lock");
   try {
     const entries = loadVault(projectDir);
     const idx = entries.findIndex(e => e.key === key);
@@ -69,7 +88,7 @@ export function addSecret(projectDir: string, key: string, value: string): void 
 export function removeSecret(projectDir: string, key: string): boolean {
   ensureVaultDir(projectDir);
   const { vault: vaultPath, base } = resolvePaths(projectDir);
-  const release = lockfile.lockSync(base, { lockfilePath: vaultPath + '.lock' });
+  const release = lockDir(base, vaultPath + ".lock");
   try {
     const entries = loadVault(projectDir);
     const idx = entries.findIndex(e => e.key === key);
@@ -96,7 +115,7 @@ export function listSecretKeys(projectDir: string): string[] {
 export function renameSecret(projectDir: string, oldKey: string, newKey: string): boolean {
   ensureVaultDir(projectDir);
   const { vault: vaultPath, base } = resolvePaths(projectDir);
-  const release = lockfile.lockSync(base, { lockfilePath: vaultPath + '.lock' });
+  const release = lockDir(base, vaultPath + ".lock");
   try {
     const entries = loadVault(projectDir);
     const idx = entries.findIndex(e => e.key === oldKey);

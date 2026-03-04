@@ -1,5 +1,23 @@
 import fs from 'node:fs';
 import lockfile from 'proper-lockfile';
+
+/** Lock with retry — proper-lockfile's lockSync doesn't support retries */
+function lockDir(base: string, lockPath: string): () => void {
+  const maxRetries = 5;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return lockfile.lockSync(base, { lockfilePath: lockPath });
+    } catch (err: unknown) {
+      if (attempt === maxRetries) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!msg.includes('already being held')) throw err;
+      const waitMs = 50 + Math.random() * 100 * (attempt + 1);
+      const end = Date.now() + waitMs;
+      while (Date.now() < end) { /* spin */ }
+    }
+  }
+  throw new Error('Failed to acquire lock');
+}
 import { resolvePaths } from '../config/paths.js';
 import { getPassphrase, readEncryptedFile, writeEncryptedFile } from '../vault/encryption.js';
 import { MEMORY_MAX_ENTRIES, MEMORY_MAX_BYTES, MEMORY_WARN_PERCENT } from '../config/defaults.js';
@@ -64,7 +82,7 @@ export async function storeMemory(
   return memoryMutex.runExclusive(() => {
     ensureDir(projectDir);
     const { memory: memPath, base } = resolvePaths(projectDir);
-    const release = lockfile.lockSync(base, { lockfilePath: memPath + '.lock' });
+    const release = lockDir(base, memPath + ".lock");
     try {
       const entries = loadMemories(projectDir);
       const now = new Date().toISOString();
@@ -119,7 +137,7 @@ export async function queryMemories(
   return memoryMutex.runExclusive(() => {
     const { memory: memPath, base } = resolvePaths(projectDir);
     ensureDir(projectDir);
-    const release = lockfile.lockSync(base, { lockfilePath: memPath + '.lock' });
+    const release = lockDir(base, memPath + ".lock");
     try {
       const entries = loadMemories(projectDir);
       // Filter out expired entries
@@ -172,7 +190,7 @@ export async function removeMemory(projectDir: string, key: string): Promise<boo
   return memoryMutex.runExclusive(() => {
     ensureDir(projectDir);
     const { memory: memPath, base } = resolvePaths(projectDir);
-    const release = lockfile.lockSync(base, { lockfilePath: memPath + '.lock' });
+    const release = lockDir(base, memPath + ".lock");
     try {
       const entries = loadMemories(projectDir);
       const idx = entries.findIndex(e => e.key === key);

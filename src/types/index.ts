@@ -99,6 +99,11 @@ export interface LicenseDescriptor {
   remainingAccesses?: number;
   maxAccesses?: number;
   subscriptionId?: string;
+  // v2.0+ wallet fields
+  buyerWallet?: string;
+  sellerWallet?: string;
+  txHash?: string;
+  signature?: string;
 }
 
 /** Bank descriptor for purchased memory bank */

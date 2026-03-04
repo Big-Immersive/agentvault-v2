@@ -14,6 +14,11 @@ import { memoryCommand } from './commands/memory.js';
 import { memoryPackageCommand } from './commands/memoryPackage.js';
 import { vaultCommand } from './commands/vault.js';
 import { mcpCommand } from './commands/mcp.js';
+import { walletCommand } from './commands/wallet.js';
+import { gatewayCommand } from './commands/gateway.js';
+import { publishCommand } from './commands/publish.js';
+import { discoverCommand } from './commands/discover.js';
+import { checkoutCommand } from './commands/checkout.js';
 
 const program = new Command();
 
@@ -40,5 +45,12 @@ program.addCommand(memory);
 
 program.addCommand(vaultCommand());
 program.addCommand(mcpCommand());
+
+// Stage 4: Gateway commands
+program.addCommand(walletCommand());
+program.addCommand(gatewayCommand());
+program.addCommand(publishCommand());
+program.addCommand(discoverCommand());
+program.addCommand(checkoutCommand());
 
 program.parse();

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { storeMemory, queryMemories, listMemories, removeMemory, exportMemories, exportFilteredMemories, loadMemories as loadMemoriesSync } from '../memory/memory.js';
 import { searchMemories } from '../memory/search.js';
+import { sanitizeMemoryEntries, hasRedactionLabels } from '../memory/sanitize.js';
 import { checkLicense, consumeAccess, loadBankEntries, listPurchasedBanks, loadLicense } from '../license/license.js';
 import type { MemoryType } from '../types/index.js';
 
@@ -149,6 +150,7 @@ export function memoryCommand(): Command {
     .option('-t, --type <type>', 'Export only entries of this memory type')
     .option('--encrypt', 'Encrypt output using portable format')
     .option('--passphrase <passphrase>', 'Passphrase for encrypted export (required with --encrypt)')
+    .option('--no-sanitize', 'Skip sensitive data redaction (sanitization is on by default)')
     .action(async (opts) => {
       if (opts.encrypt && !opts.passphrase) {
         console.error('Encrypted export requires --passphrase');
@@ -156,7 +158,7 @@ export function memoryCommand(): Command {
       }
 
       const hasFilters = opts.tag || opts.type;
-      const entries = hasFilters
+      let entries = hasFilters
         ? await exportFilteredMemories(process.cwd(), {
             tag: opts.tag,
             memoryType: opts.type as MemoryType | undefined,
@@ -164,6 +166,16 @@ export function memoryCommand(): Command {
         : await exportMemories(process.cwd());
 
       if (!entries.length) { console.log('No memories to export.'); return; }
+
+      // Sanitize by default (opt-out with --no-sanitize)
+      if (opts.sanitize !== false) {
+        const { entries: sanitized, summary } = sanitizeMemoryEntries(entries);
+        entries = sanitized;
+        if (summary.entriesRedacted > 0) {
+          const details = summary.redactions.map(r => `${r.count} ${r.type}`).join(', ');
+          console.error(`Sanitized: ${summary.entriesRedacted}/${summary.totalEntries} entries redacted (${details})`);
+        }
+      }
 
       if (opts.encrypt) {
         const { exportMemoryPortable } = await import('../portable/portable.js');
@@ -225,6 +237,12 @@ export function memoryCommand(): Command {
       } catch (err) {
         console.error(`Failed to parse ${file}: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(1);
+      }
+
+      // Warn about redaction labels in imported data
+      const redactedCount = entries.filter(e => hasRedactionLabels(e.content)).length;
+      if (redactedCount > 0) {
+        console.warn(`Warning: ${redactedCount} entries contain [REDACTED:...] labels — these may have been sanitized during a previous export.`);
       }
 
       // Apply filters

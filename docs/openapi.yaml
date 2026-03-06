@@ -1,0 +1,642 @@
+openapi: 3.1.0
+info:
+  title: AgentVault API
+  description: |
+    Agentic Credential Gating API — control what AI agents can access, 
+    with trust levels, profiles, audit trails, and emergency revocation.
+  version: 0.2.0
+  contact:
+    name: AgentVault
+    url: https://github.com/agentvault/agentvault
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:6100/v1
+    description: Local development server
+  - url: https://api.agentvault.dev/v1
+    description: Cloud (future)
+
+tags:
+  - name: Auth
+    description: Agent registration and session management
+  - name: Credentials
+    description: Credential request, batch, and release
+  - name: Profiles
+    description: Permission profile management
+  - name: Agents
+    description: Agent identity management
+  - name: Sessions
+    description: Session management and revocation
+  - name: Audit
+    description: Audit trail and analytics
+  - name: Health
+    description: Service health
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new agent
+      description: Creates a new agent identity. New agents start at trust level 10 with restrictive profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_name]
+              properties:
+                agent_name:
+                  type: string
+                  example: my-cursor-agent
+                framework:
+                  type: string
+                  enum: [cursor, claude-code, codex, langchain, crewai, autogen, openclaw, custom]
+                  example: cursor
+                metadata:
+                  type: object
+                  additionalProperties: true
+      responses:
+        "201":
+          description: Agent registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRegistration"
+        "409":
+          description: Agent name already exists
+
+  /auth/token:
+    post:
+      tags: [Auth]
+      summary: Get session token
+      description: Exchange agent credentials for a JWT session token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_id, agent_secret]
+              properties:
+                agent_id:
+                  type: string
+                  example: agt_7f3a9b2c
+                agent_secret:
+                  type: string
+                  example: avs_sk_live_...
+      responses:
+        "200":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionToken"
+        "401":
+          description: Invalid credentials
+        "423":
+          description: Agent locked out (too many failed attempts)
+
+  /credentials/request:
+    post:
+      tags: [Credentials]
+      summary: Request a credential
+      description: |
+        Core endpoint. Agent requests access to a named credential.
+        AgentVault evaluates against the agent's profile, trust level,
+        and policies, then returns ALLOW (with value), REDACT (with dummy),
+        or DENY (with reason).
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialRequest"
+      responses:
+        "200":
+          description: Credential decision (ALLOW or REDACT)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialResponse"
+        "403":
+          description: Credential denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialDenied"
+        "401":
+          description: Session expired or revoked
+        "429":
+          description: Rate limited
+
+  /credentials/batch:
+    post:
+      tags: [Credentials]
+      summary: Batch credential request
+      description: Request multiple credentials in one call. Useful for agent startup.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requests]
+              properties:
+                requests:
+                  type: array
+                  maxItems: 20
+                  items:
+                    $ref: "#/components/schemas/CredentialRequest"
+      responses:
+        "200":
+          description: Batch results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CredentialResponse"
+                  session_id:
+                    type: string
+
+  /credentials/release:
+    post:
+      tags: [Credentials]
+      summary: Release a credential
+      description: Explicitly release a credential to reduce exposure window.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [credential_name]
+              properties:
+                credential_name:
+                  type: string
+                session_id:
+                  type: string
+      responses:
+        "200":
+          description: Credential released
+
+  /profiles:
+    get:
+      tags: [Profiles]
+      summary: List profiles
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Profile"
+    post:
+      tags: [Profiles]
+      summary: Create a profile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileCreate"
+      responses:
+        "201":
+          description: Profile created
+
+  /profiles/{profile_id}:
+    get:
+      tags: [Profiles]
+      summary: Get profile details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: profile_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Profile details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  /agents:
+    get:
+      tags: [Agents]
+      summary: List registered agents
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of agents
+
+  /agents/{agent_id}:
+    get:
+      tags: [Agents]
+      summary: Get agent details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent details
+    patch:
+      tags: [Agents]
+      summary: Update agent trust or profile
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trust_level:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                profile:
+                  type: string
+      responses:
+        "200":
+          description: Agent updated
+    delete:
+      tags: [Agents]
+      summary: Deregister agent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent deregistered, sessions revoked
+
+  /sessions:
+    get:
+      tags: [Sessions]
+      summary: List active sessions
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Active sessions
+
+  /sessions/{session_id}:
+    get:
+      tags: [Sessions]
+      summary: Get session details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session details with credential access log
+    delete:
+      tags: [Sessions]
+      summary: Revoke session
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Session revoked
+
+  /revoke:
+    post:
+      tags: [Sessions]
+      summary: Emergency kill switch
+      description: Revoke ALL active sessions across ALL agents immediately.
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                scope:
+                  type: string
+                  enum: [all]
+                  default: all
+      responses:
+        "200":
+          description: All sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revoked_sessions:
+                    type: integer
+                  revoked_agents:
+                    type: array
+                    items:
+                      type: string
+                  revoked_at:
+                    type: string
+                    format: date-time
+
+  /revoke/agent/{agent_id}:
+    post:
+      tags: [Sessions]
+      summary: Revoke all sessions for an agent
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent sessions revoked
+
+  /audit:
+    get:
+      tags: [Audit]
+      summary: Query audit events
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: agent_id
+          in: query
+          schema:
+            type: string
+        - name: credential_name
+          in: query
+          schema:
+            type: string
+        - name: decision
+          in: query
+          schema:
+            type: string
+            enum: [ALLOW, DENY, REDACT]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: session_id
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Audit events
+
+  /audit/stats:
+    get:
+      tags: [Audit]
+      summary: Audit statistics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [1h, 24h, 7d, 30d]
+            default: 24h
+      responses:
+        "200":
+          description: Aggregated audit statistics
+
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      responses:
+        "200":
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                  version:
+                    type: string
+                  uptime_seconds:
+                    type: integer
+                  active_sessions:
+                    type: integer
+                  vault_status:
+                    type: string
+                    enum: [unlocked, locked]
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AgentRegistration:
+      type: object
+      properties:
+        agent_id:
+          type: string
+          example: agt_7f3a9b2c
+        agent_secret:
+          type: string
+          example: avs_sk_live_...
+        trust_level:
+          type: integer
+          example: 10
+        profile:
+          type: string
+          example: restrictive
+
+    SessionToken:
+      type: object
+      properties:
+        session_token:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        session_id:
+          type: string
+
+    CredentialRequest:
+      type: object
+      required: [credential_name]
+      properties:
+        credential_name:
+          type: string
+          example: OPENAI_API_KEY
+        purpose:
+          type: string
+          example: Generate code completion
+        scope:
+          type: string
+          example: chat.completions
+        ttl:
+          type: integer
+          description: Requested TTL in seconds
+          example: 1800
+
+    CredentialResponse:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [ALLOW, REDACT]
+        credential_name:
+          type: string
+        value:
+          type: string
+        token_type:
+          type: string
+          enum: [raw, scoped, redacted]
+        expires_at:
+          type: string
+          format: date-time
+        scope_granted:
+          type: string
+        session_id:
+          type: string
+        audit_id:
+          type: string
+
+    CredentialDenied:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [DENY]
+        credential_name:
+          type: string
+        reason:
+          type: string
+        audit_id:
+          type: string
+        upgrade_hint:
+          type: string
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        trust_required:
+          type: integer
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileRule"
+        ttl:
+          type: integer
+        max_requests_per_minute:
+          type: integer
+
+    ProfileCreate:
+      type: object
+      required: [name, rules]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        trust_required:
+          type: integer
+          default: 50
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileRule"
+        ttl:
+          type: integer
+          default: 3600
+        max_requests_per_minute:
+          type: integer
+          default: 30
+
+    ProfileRule:
+      type: object
+      required: [pattern, action]
+      properties:
+        pattern:
+          type: string
+          description: Glob pattern matching credential names
+          example: "AWS_*"
+        action:
+          type: string
+          enum: [allow, deny, redact]
+        scope:
+          type: string
+          description: Optional scope restriction for allowed credentials
+          example: "s3:GetObject"

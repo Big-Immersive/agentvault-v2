@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentvault.dev/schema/v1.0/profile.schema.json",
+  "title": "ACSS Permission Profile",
+  "description": "A permission profile that defines how credentials are exposed to an AI agent. Part of the Agent Credential Sandboxing Standard (ACSS) v1.0.",
+  "type": "object",
+  "required": ["name", "description", "trustLevel", "ttlSeconds", "rules"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Unique identifier for the profile. Lowercase alphanumeric and hyphens only."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable description of the profile's purpose."
+    },
+    "trustLevel": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Trust level from 0 (no trust) to 100 (full trust). Injected as AGENTVAULT_TRUST."
+    },
+    "ttlSeconds": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum session duration in seconds. 0 means no timeout."
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered array of permission rules. Evaluated using last-match-wins semantics.",
+      "items": {
+        "$ref": "#/$defs/PermissionRule"
+      }
+    }
+  },
+  "$defs": {
+    "PermissionRule": {
+      "type": "object",
+      "required": ["pattern", "access"],
+      "additionalProperties": false,
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Match pattern: \"*\" (all), \"PREFIX_*\" (prefix match), or exact variable name."
+        },
+        "access": {
+          "type": "string",
+          "enum": ["allow", "deny", "redact"],
+          "description": "Access decision for matching variables."
+        }
+      }
+    }
+  }
+}

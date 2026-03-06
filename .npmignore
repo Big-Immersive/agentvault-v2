@@ -1,0 +1,15 @@
+src/
+tests/
+apps/
+packages/
+docs/
+website/
+spec/
+skills/
+.github/
+.claude/
+*.test.ts
+tsconfig.json
+Makefile
+.DS_Store
+.agentvault/

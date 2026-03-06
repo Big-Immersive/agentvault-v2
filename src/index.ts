@@ -11,6 +11,8 @@ import { previewCommand } from './commands/preview.js';
 import { doctorCommand } from './commands/doctor.js';
 import { diffCommand } from './commands/diff.js';
 import { wrapCommand } from './commands/wrap.js';
+import { rotateCommand } from './commands/rotate.js';
+import { watchCommand } from './commands/watch.js';
 import { memoryCommand } from './commands/memory.js';
 import { memoryPackageCommand } from './commands/memoryPackage.js';
 import { vaultCommand } from './commands/vault.js';
@@ -57,6 +59,8 @@ program.addCommand(previewCommand());
 program.addCommand(doctorCommand());
 program.addCommand(diffCommand());
 program.addCommand(wrapCommand());
+program.addCommand(rotateCommand());
+program.addCommand(watchCommand());
 
 // Memory commands
 const memory = memoryCommand();

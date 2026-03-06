@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentvault.dev/schema/v1.0/session.schema.json",
+  "title": "ACSS Session",
+  "description": "An active agent execution context with lifecycle tracking. Part of the Agent Credential Sandboxing Standard (ACSS) v1.0.",
+  "type": "object",
+  "required": ["id", "agentId", "profileName", "pid", "startedAt", "active"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID v4 uniquely identifying this session."
+    },
+    "agentId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the agent running in this session."
+    },
+    "profileName": {
+      "type": "string",
+      "description": "Name of the permission profile applied to this session."
+    },
+    "pid": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Operating system process ID of the agent."
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the session was created."
+    },
+    "active": {
+      "type": "boolean",
+      "description": "Whether the session is currently running. Set to false on revocation or expiry."
+    }
+  }
+}

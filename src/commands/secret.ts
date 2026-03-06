@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import fs from 'node:fs';
-import { addSecret, getSecret, removeSecret, listSecretKeys } from '../vault/vault.js';
+import { addSecret, getSecret, removeSecret, listSecretKeys, renameSecret } from '../vault/vault.js';
 
 export function secretCommand(): Command {
   const cmd = new Command('secret').description('Manage vault secrets');
@@ -63,6 +63,14 @@ export function secretCommand(): Command {
         count++;
       }
       console.log(`Imported ${count} secret(s) from ${file}`);
+    });
+
+  cmd.command('rename <oldKey> <newKey>')
+    .description('Rename a secret key')
+    .action((oldKey: string, newKey: string) => {
+      const renamed = renameSecret(process.cwd(), oldKey, newKey);
+      if (renamed) console.log(`Renamed "${oldKey}" to "${newKey}"`);
+      else console.log(`Secret "${oldKey}" not found.`);
     });
 
   return cmd;

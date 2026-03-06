@@ -1,0 +1,7 @@
+name: permissive
+description: Full access with audit trail — allows everything, logs all access. For trusted agents.
+trustLevel: 90
+ttlSeconds: 86400
+rules:
+  - pattern: "*"
+    access: allow

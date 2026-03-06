@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentvault.dev/schema/v1.0/audit-entry.schema.json",
+  "title": "ACSS Audit Entry",
+  "description": "An immutable record of a credential access decision. Part of the Agent Credential Sandboxing Standard (ACSS) v1.0.",
+  "type": "object",
+  "required": ["sessionId", "agentId", "profileName", "varName", "action", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Auto-incremented sequential identifier."
+    },
+    "sessionId": {
+      "type": "string",
+      "format": "uuid",
+      "description": "UUID of the active session this decision belongs to."
+    },
+    "agentId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the agent whose access was evaluated."
+    },
+    "profileName": {
+      "type": "string",
+      "description": "Name of the profile used for this evaluation."
+    },
+    "varName": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The credential/environment variable name that was evaluated."
+    },
+    "action": {
+      "type": "string",
+      "enum": ["allow", "deny", "redact"],
+      "description": "The access decision that was applied."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when the decision was made."
+    }
+  }
+}

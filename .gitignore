@@ -3,3 +3,5 @@ dist/
 .agentvault/
 *.lock
 .DS_Store
+.next/
+.mcp.json

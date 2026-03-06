@@ -1,0 +1,7 @@
+name: restrictive
+description: Minimal access — denies everything except system vars. For untrusted or new agents.
+trustLevel: 10
+ttlSeconds: 300
+rules:
+  - pattern: "*"
+    access: deny

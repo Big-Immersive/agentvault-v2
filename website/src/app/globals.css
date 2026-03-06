@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+@theme {
+  /* ─── Core Colors — Inflectiv Blue Theme ─── */
+  --color-primary: #e98e58;
+  --color-primary-hover: #d87c48;
+  --color-primary-fg: #ffffff;
+  --color-bg: #f7f6f7;
+  --color-fg: #1b0c25;
+  --color-card: rgba(255, 255, 255, 0.8);
+  --color-muted: #666666;
+  --color-muted-bg: #e8f0f5;
+  --color-border: rgba(27, 12, 37, 0.12);
+  --color-code-bg: #1b0c25;
+
+  /* Accent Colors */
+  --color-accent-lavender: #98c1d9;
+  --color-accent-coral: #6b9ac4;
+  --color-accent-pink: #3d5a80;
+  --color-trust-green: #10B981;
+  --color-alert-amber: #F59E0B;
+  --color-danger-red: #EF4444;
+
+  /* Section Colors */
+  --color-steel-blue: #98c1d9;
+  --color-navy: #3d5a80;
+
+  /* Surfaces */
+  --color-surface-0: #98c1d9;
+  --color-surface-1: #d4e6f1;
+  --color-surface-2: #ffffff;
+  --color-surface-3: #f7f6f7;
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-heading: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* ─── Base ─── */
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(152, 193, 217, 0.4);
+  color: var(--color-fg);
+}
+
+/* ─── Gradient Text ─── */
+.gradient-text {
+  background: linear-gradient(135deg, #e98e58 0%, #d87c48 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-warm {
+  background: linear-gradient(135deg, #e98e58 0%, #d87c48 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Cards ─── */
+.card-glow {
+  position: relative;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-glow:hover {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(233, 142, 88, 0.35);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+/* ─── Animated Background Blobs ─── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.orb-1 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(152, 193, 217, 0.5) 0%, transparent 70%);
+  animation: float1 20s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(107, 154, 196, 0.5) 0%, transparent 70%);
+  animation: float2 25s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(61, 90, 128, 0.35) 0%, transparent 70%);
+  animation: float3 30s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(50px, -30px) scale(1.05); }
+  50% { transform: translate(-20px, 40px) scale(0.95); }
+  75% { transform: translate(30px, 20px) scale(1.02); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 30px) scale(1.03); }
+  66% { transform: translate(30px, -40px) scale(0.97); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(40px, -20px); }
+}
+
+/* ─── Terminal / Code Block ─── */
+.terminal-glow {
+  box-shadow:
+    0 4px 16px rgba(27, 12, 37, 0.1),
+    0 1px 4px rgba(27, 12, 37, 0.06);
+  transition: box-shadow 0.4s ease;
+}
+
+.terminal-glow:hover {
+  box-shadow:
+    0 8px 32px rgba(27, 12, 37, 0.12),
+    0 2px 8px rgba(27, 12, 37, 0.08);
+}
+
+/* ─── Reveal Animation ─── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children */
+.reveal-stagger > .reveal:nth-child(1) { transition-delay: 0ms; }
+.reveal-stagger > .reveal:nth-child(2) { transition-delay: 100ms; }
+.reveal-stagger > .reveal:nth-child(3) { transition-delay: 200ms; }
+.reveal-stagger > .reveal:nth-child(4) { transition-delay: 300ms; }
+.reveal-stagger > .reveal:nth-child(5) { transition-delay: 400ms; }
+.reveal-stagger > .reveal:nth-child(6) { transition-delay: 500ms; }
+
+/* ─── Section Divider ─── */
+.section-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(27, 12, 37, 0.1), transparent);
+}
+
+/* ─── Buttons ─── */
+.btn-primary {
+  background: var(--color-primary);
+  color: white;
+  font-weight: 600;
+  border-radius: 12px;
+  padding: 14px 28px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(233, 142, 88, 0.3);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+  box-shadow: 0 6px 20px rgba(233, 142, 88, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  border: 1px solid rgba(27, 12, 37, 0.15);
+  color: var(--color-fg);
+  font-weight: 500;
+  border-radius: 12px;
+  padding: 14px 28px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.btn-secondary:hover {
+  border-color: rgba(233, 142, 88, 0.4);
+  background: rgba(233, 142, 88, 0.06);
+  box-shadow: 0 4px 12px rgba(27, 12, 37, 0.06);
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-surface-1); }
+::-webkit-scrollbar-thumb { background: var(--color-steel-blue); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+/* ─── Code Block Syntax Colors (dark code blocks) ─── */
+.syntax-keyword { color: #e98e58; }
+.syntax-string { color: #34D399; }
+.syntax-comment { color: #666666; }
+.syntax-function { color: #98c1d9; }
+.syntax-variable { color: #d4e6f1; }

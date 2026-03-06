@@ -137,6 +137,19 @@ export interface MemoryPortable {
   memories: MemoryEntry[];
 }
 
+/** Sanitization redaction info */
+export interface RedactionInfo {
+  type: string;
+  count: number;
+}
+
+/** Summary of sanitization across multiple entries */
+export interface SanitizeSummary {
+  totalEntries: number;
+  entriesRedacted: number;
+  redactions: RedactionInfo[];
+}
+
 /** MCP server error codes */
 export type McpErrorCode =
   | 'KEY_NOT_FOUND'

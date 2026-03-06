@@ -1,0 +1,17 @@
+name: ci-readonly
+description: Read-only CI environment — allows CI vars, denies all secrets.
+trustLevel: 30
+ttlSeconds: 600
+rules:
+  - pattern: "*"
+    access: deny
+  - pattern: CI
+    access: allow
+  - pattern: CI_*
+    access: allow
+  - pattern: GITHUB_*
+    access: allow
+  - pattern: NODE_ENV
+    access: allow
+  - pattern: NPM_*
+    access: allow

@@ -1,0 +1,27 @@
+name: cloud-redact
+description: Allows dev vars, redacts all cloud provider credentials.
+trustLevel: 40
+ttlSeconds: 1800
+rules:
+  - pattern: "*"
+    access: deny
+  - pattern: NODE_ENV
+    access: allow
+  - pattern: PORT
+    access: allow
+  - pattern: HOST
+    access: allow
+  - pattern: DEBUG
+    access: allow
+  - pattern: AWS_*
+    access: redact
+  - pattern: GCP_*
+    access: redact
+  - pattern: AZURE_*
+    access: redact
+  - pattern: OPENAI_*
+    access: redact
+  - pattern: ANTHROPIC_*
+    access: redact
+  - pattern: DATABASE_URL
+    access: redact

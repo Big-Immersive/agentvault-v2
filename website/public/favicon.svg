@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#e98e58"/>
+  <!-- AgentVault Shield Brandmark -->
+  <g transform="translate(16, 15.5)" fill="none">
+    <!-- Shield outline -->
+    <path d="M0-9 L8-5 L8 2 C8 6.5 4 9.5 0 11 C-4 9.5 -8 6.5 -8 2 L-8-5 Z"
+          stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- Lock keyhole -->
+    <circle cx="0" cy="0" r="2" fill="white"/>
+    <rect x="-1" y="0.5" width="2" height="3" rx="0.5" fill="white"/>
+  </g>
+</svg>

@@ -6,8 +6,13 @@ import { Upload } from 'lucide-react';
 
 const DATASET_CATEGORIES = [
   { value: 'knowledge', label: 'Knowledge' },
-  { value: 'operational', label: 'Operational' },
-  { value: 'query_cache', label: 'Query Cache' },
+  { value: 'code_snippets', label: 'Code Snippets' },
+  { value: 'api_references', label: 'API References' },
+  { value: 'tutorials', label: 'Tutorials' },
+  { value: 'prompts', label: 'Prompt Templates' },
+  { value: 'security', label: 'Security Rules' },
+  { value: 'config', label: 'Configurations' },
+  { value: 'other', label: 'Other' },
 ];
 
 interface UploadFormProps {
@@ -65,7 +70,12 @@ export default function UploadForm({ uploadType }: UploadFormProps) {
 
       <div>
         <label className="block text-sm mb-1 text-[var(--text-secondary)]">Description</label>
-        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Brief description of the dataset" />
+        <textarea
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          placeholder="Brief description of what this contains and how agents can use it"
+          rows={3}
+        />
       </div>
 
       {!isSkill && (

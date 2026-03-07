@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Database, Zap } from 'lucide-react';
+import { Search, Database, Zap, Upload } from 'lucide-react';
+import Link from 'next/link';
 import DatasetCard from '@/components/DatasetCard';
 
 interface Dataset {
@@ -100,9 +101,19 @@ export default function BrowsePage() {
       {loading ? (
         <p className="text-[var(--text-secondary)]">Loading...</p>
       ) : datasets.length === 0 ? (
-        <p className="text-[var(--text-secondary)]">
-          No {type === 'skill' ? 'skills' : 'datasets'} found. Be the first to upload one!
-        </p>
+        <div className="text-center py-12">
+          <Upload className="w-10 h-10 mx-auto mb-3 text-[var(--text-secondary)]" />
+          <p className="text-[var(--text-secondary)] mb-4">
+            No {type === 'skill' ? 'skills' : 'datasets'} found. Be the first to upload one!
+          </p>
+          <Link
+            href="/marketplace/upload"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--accent)] text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+          >
+            <Upload className="w-4 h-4" />
+            Upload {type === 'skill' ? 'Skill' : 'Dataset'}
+          </Link>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {datasets.map(d => <DatasetCard key={d.id} {...d} />)}

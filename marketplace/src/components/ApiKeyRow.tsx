@@ -1,6 +1,7 @@
 'use client';
 
-import { KeyRound, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { KeyRound, Trash2, Copy, Check } from 'lucide-react';
 
 interface ApiKeyRowProps {
   id: number;
@@ -12,6 +13,14 @@ interface ApiKeyRowProps {
 }
 
 export default function ApiKeyRow({ id, prefix, label, createdAt, revoked, onRevoke }: ApiKeyRowProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(prefix);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className={`flex items-center justify-between p-3 bg-[var(--bg-card)] rounded-lg border border-[var(--border)] ${revoked ? 'opacity-50' : ''}`}>
       <div className="flex items-center gap-3">
@@ -27,15 +36,26 @@ export default function ApiKeyRow({ id, prefix, label, createdAt, revoked, onRev
           </div>
         </div>
       </div>
-      {!revoked && (
-        <button
-          onClick={() => onRevoke(id)}
-          className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--danger)] hover:bg-red-500/10 rounded-lg transition-colors"
-          title="Revoke key"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      )}
+      <div className="flex items-center gap-1">
+        {!revoked && (
+          <button
+            onClick={handleCopy}
+            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent)]/10 rounded-lg transition-colors"
+            title="Copy key prefix"
+          >
+            {copied ? <Check className="w-4 h-4 text-[var(--success)]" /> : <Copy className="w-4 h-4" />}
+          </button>
+        )}
+        {!revoked && (
+          <button
+            onClick={() => onRevoke(id)}
+            className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--danger)] hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Revoke key"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

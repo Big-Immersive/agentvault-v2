@@ -30,12 +30,12 @@ export default function MyDatasetsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold">My Datasets</h1>
+        <h1 className="text-2xl font-semibold">My Uploads</h1>
         <Link
           href="/marketplace/upload"
           className="flex items-center gap-2 px-4 py-2 bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] text-sm"
         >
-          <Plus className="w-4 h-4" /> New Dataset
+          <Plus className="w-4 h-4" /> New Upload
         </Link>
       </div>
 
@@ -44,7 +44,7 @@ export default function MyDatasetsPage() {
       ) : datasets.length === 0 ? (
         <div className="text-center py-12 text-[var(--text-secondary)]">
           <Database className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p>No datasets yet. Upload your first one!</p>
+          <p>No uploads yet. Publish your first dataset or skill!</p>
         </div>
       ) : (
         <div className="border border-[var(--border)] rounded-xl overflow-hidden">

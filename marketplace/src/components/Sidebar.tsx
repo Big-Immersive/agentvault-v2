@@ -6,8 +6,8 @@ import { Search, Upload, Database, Key, Users, BookOpen } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/marketplace', label: 'Browse', icon: Search },
-  { href: '/marketplace/upload', label: 'Upload Dataset', icon: Upload },
-  { href: '/marketplace/my-datasets', label: 'My Datasets', icon: Database },
+  { href: '/marketplace/upload', label: 'Upload', icon: Upload },
+  { href: '/marketplace/my-datasets', label: 'My Uploads', icon: Database },
   { href: '/marketplace/api-keys', label: 'API Keys', icon: Key },
   { href: '/marketplace/users', label: 'Users', icon: Users },
   { href: '/marketplace/docs', label: 'API Docs', icon: BookOpen },

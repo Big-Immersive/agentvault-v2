@@ -13,6 +13,7 @@ interface DatasetDetail {
   content: string;
   tags: string[];
   entryCount: number;
+  priceUsdc: number | null;
   author: string;
   createdAt: string;
   updatedAt: string;
@@ -57,8 +58,13 @@ export default function DatasetDetailPage() {
         </span>
       </div>
 
-      <div className="flex gap-4 text-sm text-[var(--text-secondary)] mb-4">
+      <div className="flex items-center gap-4 text-sm text-[var(--text-secondary)] mb-4">
         <span>{dataset.entryCount} entries</span>
+        {dataset.priceUsdc != null && dataset.priceUsdc > 0 ? (
+          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium">${dataset.priceUsdc.toFixed(2)} USDC</span>
+        ) : (
+          <span className="px-2 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium">Free</span>
+        )}
         <span>By {dataset.author}</span>
         <span>Created {new Date(dataset.createdAt).toLocaleDateString()}</span>
       </div>

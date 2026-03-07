@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload } from 'lucide-react';
+import { Upload, DollarSign } from 'lucide-react';
 
 const DATASET_CATEGORIES = [
   { value: 'knowledge', label: 'Knowledge' },
@@ -26,6 +26,8 @@ export default function UploadForm({ uploadType }: UploadFormProps) {
   const [category, setCategory] = useState(isSkill ? 'skills' : 'knowledge');
   const [tags, setTags] = useState('');
   const [content, setContent] = useState('');
+  const [pricing, setPricing] = useState<'free' | 'paid'>('free');
+  const [priceUsdc, setPriceUsdc] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -40,7 +42,10 @@ export default function UploadForm({ uploadType }: UploadFormProps) {
       const res = await fetch('/api/datasets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, description, category, content, tags: tagList }),
+        body: JSON.stringify({
+          name, description, category, content, tags: tagList,
+          priceUsdc: pricing === 'paid' && Number(priceUsdc) > 0 ? Number(priceUsdc) : null,
+        }),
       });
 
       const data = await res.json();
@@ -90,6 +95,48 @@ export default function UploadForm({ uploadType }: UploadFormProps) {
       <div>
         <label className="block text-sm mb-1 text-[var(--text-secondary)]">Tags (comma-separated)</label>
         <input type="text" value={tags} onChange={e => setTags(e.target.value)} placeholder="e.g., api, payments, stripe" />
+      </div>
+
+      <div>
+        <label className="block text-sm mb-1 text-[var(--text-secondary)]">Pricing</label>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => { setPricing('free'); setPriceUsdc(''); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              pricing === 'free'
+                ? 'bg-green-500/20 text-green-600 border border-green-500/30'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            Free
+          </button>
+          <button
+            type="button"
+            onClick={() => setPricing('paid')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              pricing === 'paid'
+                ? 'bg-amber-500/20 text-amber-600 border border-amber-500/30'
+                : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            <DollarSign className="w-3.5 h-3.5" /> Paid
+          </button>
+        </div>
+        {pricing === 'paid' && (
+          <div className="mt-2 relative max-w-xs">
+            <input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={priceUsdc}
+              onChange={e => setPriceUsdc(e.target.value)}
+              placeholder="0.00"
+              required
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-secondary)]">USDC</span>
+          </div>
+        )}
       </div>
 
       <div>

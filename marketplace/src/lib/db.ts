@@ -30,6 +30,7 @@ export async function initSchema(): Promise<void> {
       tags        TEXT NOT NULL DEFAULT '[]',
       entry_count INTEGER NOT NULL DEFAULT 0,
       is_public   BOOLEAN NOT NULL DEFAULT TRUE,
+      price_usdc  DECIMAL(10,2) DEFAULT NULL,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -57,6 +58,14 @@ export async function initSchema(): Promise<void> {
   await pool.query(`
     DO $$ BEGIN
       ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_full TEXT NOT NULL DEFAULT '';
+    EXCEPTION WHEN duplicate_column THEN NULL;
+    END $$;
+  `);
+
+  // Migration: add price_usdc column if missing
+  await pool.query(`
+    DO $$ BEGIN
+      ALTER TABLE datasets ADD COLUMN IF NOT EXISTS price_usdc DECIMAL(10,2) DEFAULT NULL;
     EXCEPTION WHEN duplicate_column THEN NULL;
     END $$;
   `);

@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
     category: r.category,
     tags: JSON.parse(r.tags),
     entryCount: r.entry_count,
+    priceUsdc: r.price_usdc ? parseFloat(r.price_usdc) : null,
     author: r.username,
     createdAt: r.created_at,
   }));
@@ -73,12 +74,13 @@ export async function POST(request: Request) {
 
   const tags = Array.isArray(body.tags) ? body.tags : [];
   const entryCount = body.content.split('\n').filter((l: string) => l.trim()).length;
+  const priceUsdc = body.priceUsdc != null && Number(body.priceUsdc) > 0 ? Number(body.priceUsdc) : null;
 
   const pool = await getDb();
   const { rows } = await pool.query(
-    `INSERT INTO datasets (user_id, name, description, category, content, tags, entry_count)
-     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-    [userId, body.name.trim(), body.description?.trim() ?? '', body.category, body.content, JSON.stringify(tags), entryCount]
+    `INSERT INTO datasets (user_id, name, description, category, content, tags, entry_count, price_usdc)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+    [userId, body.name.trim(), body.description?.trim() ?? '', body.category, body.content, JSON.stringify(tags), entryCount, priceUsdc]
   );
 
   return NextResponse.json(

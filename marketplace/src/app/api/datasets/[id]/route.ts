@@ -23,6 +23,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     content: row.content,
     tags: JSON.parse(row.tags),
     entryCount: row.entry_count,
+    priceUsdc: row.price_usdc ? parseFloat(row.price_usdc) : null,
     author: row.username,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

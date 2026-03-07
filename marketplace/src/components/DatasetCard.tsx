@@ -8,6 +8,7 @@ interface DatasetCardProps {
   category: string;
   tags: string[];
   entryCount: number;
+  priceUsdc: number | null;
   author: string;
   createdAt: string;
 }
@@ -19,7 +20,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   query_cache: 'bg-purple-500/20 text-purple-400',
 };
 
-export default function DatasetCard({ id, name, description, category, tags, entryCount, author, createdAt }: DatasetCardProps) {
+export default function DatasetCard({ id, name, description, category, tags, entryCount, priceUsdc, author, createdAt }: DatasetCardProps) {
   return (
     <Link href={`/marketplace/dataset/${id}`} className="block p-4 bg-[var(--bg-card)] rounded-xl border border-[var(--border)] hover:border-[var(--accent)] transition-colors shadow-sm hover:shadow-md">
       <div className="flex items-start justify-between mb-2">
@@ -44,7 +45,14 @@ export default function DatasetCard({ id, name, description, category, tags, ent
         </div>
       )}
       <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
-        <span>{entryCount} entries</span>
+        <div className="flex items-center gap-2">
+          <span>{entryCount} entries</span>
+          {priceUsdc != null && priceUsdc > 0 ? (
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-600 font-medium">${priceUsdc.toFixed(2)} USDC</span>
+          ) : (
+            <span className="px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-600 font-medium">Free</span>
+          )}
+        </div>
         <span>{author} &middot; {new Date(createdAt).toLocaleDateString()}</span>
       </div>
     </Link>

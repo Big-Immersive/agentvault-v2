@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       category: r.category,
       tags: JSON.parse(r.tags),
       entryCount: r.entry_count,
+      priceUsdc: r.price_usdc ? parseFloat(r.price_usdc) : null,
       author: r.username,
       createdAt: r.created_at,
     })),

@@ -12,6 +12,7 @@ interface Dataset {
   category: string;
   tags: string[];
   entryCount: number;
+  priceUsdc: number | null;
   author: string;
   createdAt: string;
 }

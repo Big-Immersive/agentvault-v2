@@ -34,6 +34,7 @@ const TOOLS = [
         description: { type: 'string', description: 'Brief description of the skill' },
         content: { type: 'string', description: 'Skill content — definitions, capabilities, or encrypted memory packages' },
         tags: { type: 'array', items: { type: 'string' }, description: 'Tags for discoverability' },
+        priceUsdc: { type: 'number', description: 'Price in USDC. Omit or 0 for free.' },
         apiKey: { type: 'string', description: 'API key (av_xxx format) for authentication' },
       },
       required: ['name', 'content', 'apiKey'],
@@ -63,7 +64,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   if (name === 'marketplace.publish_skill') {
-    const { name: skillName, description, content, tags, apiKey } = args as Record<string, unknown>;
+    const { name: skillName, description, content, tags, priceUsdc, apiKey } = args as Record<string, unknown>;
     if (!skillName || !content || !apiKey) {
       return { content: [{ type: 'text' as const, text: 'Error: name, content, and apiKey are required' }], isError: true };
     }
@@ -80,6 +81,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           category: 'skills',
           content,
           tags: Array.isArray(tags) ? tags : [],
+          priceUsdc: priceUsdc != null && Number(priceUsdc) > 0 ? Number(priceUsdc) : null,
         }),
       });
       const data = await res.json().catch(() => ({ error: res.statusText }));

@@ -6,11 +6,13 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
-    "mcp": "tsx src/mcp/server.ts"
+    "mcp": "tsx src/mcp/server.ts",
+    "mcp:http": "tsx src/mcp/http-server.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@tailwindcss/postcss": "^4.2.1",
+    "express": "^5.2.1",
     "jose": "^6.0.11",
     "lucide-react": "^0.564.0",
     "next": "^15.3.3",
@@ -21,6 +23,7 @@
     "zod": "3.24.4"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.18.0",
     "@types/react": "^19.0.0",

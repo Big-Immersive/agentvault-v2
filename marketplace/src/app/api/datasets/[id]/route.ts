@@ -1,21 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { requireUser, getUserFromApiKey } from '@/lib/middleware';
 
-/** GET /api/datasets/[id] — get a single dataset (JWT or API key auth) */
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  // Try JWT auth first, then API key
-  const user = await requireUser();
-  const apiKeyUser = user instanceof NextResponse ? await getUserFromApiKey(request) : null;
-
-  if (user instanceof NextResponse && !apiKeyUser) {
-    return user; // 401
-  }
-
+/** GET /api/datasets/[id] — get a single dataset (public) */
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const pool = await getDb();
   const { rows } = await pool.query(
-    'SELECT d.*, u.username FROM datasets d JOIN users u ON d.user_id = u.id WHERE d.id = $1',
+    'SELECT d.*, u.username FROM datasets d JOIN users u ON d.user_id = u.id WHERE d.id = $1 AND d.is_public = TRUE',
     [Number(id)]
   );
 

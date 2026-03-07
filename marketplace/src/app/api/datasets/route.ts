@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireUser, getUserFromApiKey } from '@/lib/middleware';
 
-/** GET /api/datasets — list datasets with optional search, category, and type filter */
+/** GET /api/datasets — list datasets with optional search, category, and type filter (public) */
 export async function GET(request: NextRequest) {
-  const user = await requireUser();
-  if (user instanceof NextResponse) return user;
-
   const { searchParams } = request.nextUrl;
   const q = searchParams.get('q');
   const category = searchParams.get('category');

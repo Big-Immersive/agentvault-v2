@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AgentVault Marketplace',
+  title: 'AgentVault Marketplace Mock',
   description: 'Discover and share AI agent datasets, skills, and memories',
 };
 
